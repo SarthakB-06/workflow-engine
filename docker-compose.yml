@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: workflow
+      POSTGRES_PASSWORD: workflow
+      POSTGRES_DB: workflow_engine
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U workflow -d workflow_engine"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # redis:   ← Uncomment in Week 7 (Redis Streams queue)
+  #   image: redis:7-alpine
+  #   ports:
+  #     - "6379:6379"
+
+volumes:
+  postgres_data:
