@@ -1,10 +1,10 @@
 package service
 
-
 import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/sarthak/workflow-engine/internal/workflow/domain"
 	"github.com/sarthak/workflow-engine/internal/workflow/repository"
@@ -14,11 +14,9 @@ type WorkflowService struct {
 	repo repository.WorkflowRepository
 }
 
-
 func NewWorkflowService(repo repository.WorkflowRepository) *WorkflowService {
 	return &WorkflowService{repo: repo}
 }
-
 
 func (s *WorkflowService) CreateWorkflow(
 	ctx context.Context,
@@ -35,6 +33,7 @@ func (s *WorkflowService) CreateWorkflow(
 	}
 	return nil
 }
+
 // GetWorkflow retrieves a workflow definition by its UUID primary key.
 func (s *WorkflowService) GetWorkflow(
 	ctx context.Context,
@@ -42,11 +41,12 @@ func (s *WorkflowService) GetWorkflow(
 ) (*domain.WorkflowDefinition, error) {
 	wf, err := s.repo.GetWorkflowByID(ctx, id)
 	if err != nil {
-		
+
 		return nil, fmt.Errorf("get workflow: %w", err)
 	}
 	return wf, nil
 }
+
 // ListWorkflows returns all workflow definitions (without their steps).
 func (s *WorkflowService) ListWorkflows(
 	ctx context.Context,
