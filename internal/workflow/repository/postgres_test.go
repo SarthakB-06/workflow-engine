@@ -24,7 +24,7 @@ func setupTestDB(t *testing.T) (*pgxpool.Pool, repository.WorkflowRepository) {
 	}
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		dbURL = "postgres://postgres:postgres@localhost:5432/workflow_engine?sslmode=disable"
+		dbURL = "postgres://workflow:workflow@localhost:5432/workflow_engine?sslmode=disable"
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()

@@ -38,7 +38,13 @@ type ExecutionRepository interface {
 
 	// ── Read methods (no transaction needed) ─────────────────────────────────
 
+
 	GetExecutionByID(ctx context.Context, id uuid.UUID) (*domain.WorkflowExecution, error)
+
+
+	GetTaskExecutionByIdempotencyKey(ctx context.Context, key string) (*domain.TaskExecution, error)
+
+	GetTaskExecutionByID(ctx context.Context, id uuid.UUID) (*domain.TaskExecution, error)
 
 	// GetEventsByExecutionID returns events ordered by sequence_number ASC.
 	// This is the direct input to RebuildState — order is critical.
@@ -241,6 +247,76 @@ func (r *postgresExecutionRepo) GetExecutionByID(
 	}
 	return exec, nil
 }
+
+func (r *postgresExecutionRepo) GetTaskExecutionByIdempotencyKey(
+	ctx context.Context,
+	key string,
+) (*domain.TaskExecution, error) {
+	task := &domain.TaskExecution{}
+	var statusStr string
+	err := r.pool.QueryRow(ctx,
+		`SELECT id, workflow_execution_id, step_id, status, attempt,
+		        idempotency_key, next_retry_at, worker_id, started_at, completed_at
+		 FROM task_executions
+		 WHERE idempotency_key = $1`,
+		key,
+	).Scan(
+		&task.ID,
+		&task.WorkflowExecutionID,
+		&task.StepID,
+		&statusStr,
+		&task.Attempt,
+		&task.IdempotencyKey,
+		&task.NextRetryAt,
+		&task.WorkerID,
+		&task.StartedAt,
+		&task.CompletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("query task_execution by idempotency_key: %w", err)
+	}
+	task.Status = domain.TaskStatus(statusStr)
+	return task, nil
+}
+
+
+func (r *postgresExecutionRepo) GetTaskExecutionByID(
+	ctx context.Context,
+	id uuid.UUID,
+) (*domain.TaskExecution, error) {
+	task := &domain.TaskExecution{}
+	var statusStr string
+	err := r.pool.QueryRow(ctx,
+		`SELECT id, workflow_execution_id, step_id, status, attempt,
+		        idempotency_key, next_retry_at, worker_id, started_at, completed_at
+		 FROM task_executions
+		 WHERE id = $1`,
+		id,
+	).Scan(
+		&task.ID,
+		&task.WorkflowExecutionID,
+		&task.StepID,
+		&statusStr,
+		&task.Attempt,
+		&task.IdempotencyKey,
+		&task.NextRetryAt,
+		&task.WorkerID,
+		&task.StartedAt,
+		&task.CompletedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("query task_execution by id: %w", err)
+	}
+	task.Status = domain.TaskStatus(statusStr)
+	return task, nil
+}
+
 
 // GetEventsByExecutionID fetches all events for one execution, in sequence order.
 // ORDER BY sequence_number ASC — never use created_at for ordering events.
